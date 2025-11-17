@@ -1,0 +1,33 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+  devtools:
+    add-properties: false
+  datasource:
+    url: jdbc:mysql://localhost:3306/manage_homestay
+    username: root
+    password: Huy160105@
+    hikari: # Connection poll
+      max-lifetime: 300000      # 5 phút
+      idle-timeout: 60000       # 1 phút
+      validation-timeout: 5000  # 5 giây
+      minimum-idle: 5
+      maximum-pool-size: 20
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: none
+
+# application-dev.yml
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+openapi:
+  service:
+    api-docs: backend-service
+    server: http://localhost:8080
+    title: Backend service
+    version: 1.0.0
