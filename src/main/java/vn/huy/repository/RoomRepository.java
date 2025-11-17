@@ -1,5 +1,7 @@
 package vn.huy.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,18 +16,21 @@ import java.util.List;
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
 
-    @Query(value = "select r from Room r where (:status is null or r.status = :status) " +
-            "and (:capacity is null or r.capacity >= :capacity) " +
-            "and (:minPrice is null or r.price >= :minPrice) " +
-            "and (:maxPrice is null or r.price <= :maxPrice) " +
-            "and (:type is null or r.type = :type)")
-    List<Room> findRoomsByFilters (
+    @Query(value = "SELECT DISTINCT r FROM Room r " +
+            "LEFT JOIN FETCH r.images " +
+            "WHERE (:status IS NULL OR r.status = :status) " +
+            "AND (:capacity IS NULL OR r.capacity >= :capacity) " +
+            "AND (:minPrice IS NULL OR r.price >= :minPrice) " +
+            "AND (:maxPrice IS NULL OR r.price <= :maxPrice) " +
+            "AND (:type IS NULL OR r.type = :type)")
+    Page<Room> findRoomsByFilters(
             @Param("type") RoomType type,
             @Param("status") RoomStatus status,
             @Param("capacity") Integer capacity,
             @Param("minPrice") BigDecimal minPrice,
-            @Param("maxPrice") BigDecimal maxPrice
-            );
+            @Param("maxPrice") BigDecimal maxPrice,
+            Pageable pageable
+    );
 
     boolean existsByName(String name);
 

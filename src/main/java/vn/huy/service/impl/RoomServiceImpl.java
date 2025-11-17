@@ -3,6 +3,8 @@ package vn.huy.service.impl;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.huy.common.RoomStatus;
 import vn.huy.common.RoomType;
@@ -23,7 +25,6 @@ import vn.huy.service.RoomService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -35,8 +36,14 @@ public class RoomServiceImpl implements RoomService {
     private final RoomStatusHistoryRepository roomStatusHistoryRepository;
 
     @Override
-    public List<Room> filterRooms(RoomType type, RoomStatus status, Integer capacity, BigDecimal minPrice, BigDecimal maxPrice) {
-        return roomRepository.findRoomsByFilters(type, status, capacity, minPrice, maxPrice);
+    public Page<RoomResponse> filterRooms(RoomType type,
+                                          RoomStatus status,
+                                          Integer capacity,
+                                          BigDecimal minPrice,
+                                          BigDecimal maxPrice,
+                                          Pageable pageable) {
+        Page<Room> rooms = roomRepository.findRoomsByFilters(type, status, capacity, minPrice, maxPrice, pageable);
+        return rooms.map(this::mapToResponse);
     }
 
     @Transactional
@@ -58,11 +65,6 @@ public class RoomServiceImpl implements RoomService {
         roomRepository.save(room);
 
         // * lấy imageUrl room
-        List<String> images = room.getImages().stream()
-                .map(RoomImage::getImageUrl)
-                .filter(Objects::nonNull)
-                .filter(url -> !url.isEmpty())
-                .toList();
 
         // 2) Sava image
         if (request.getImages() != null && !request.getImages().isEmpty()) {
@@ -74,18 +76,13 @@ public class RoomServiceImpl implements RoomService {
             }
         }
 
-        return mapToRoomResponse(images, room);
+        return mapToResponse(room);
     }
 
     @Override
     public RoomResponse findRoomById(Long id) {
         Room room = getRoom(id);
-        List<String> images = room.getImages().stream()
-                .map(RoomImage::getImageUrl)
-                .filter(Objects::nonNull)
-                .filter(url -> !url.isEmpty())
-                .toList();
-        return mapToRoomResponse(images, room);
+        return mapToResponse(room);
     }
 
     /* =================
@@ -98,11 +95,6 @@ public class RoomServiceImpl implements RoomService {
         Room room = getRoom(id);
 
         // get oldImage
-        List<String> oldImages = room.getImages().stream()
-                .map(RoomImage::getImageUrl)
-                .filter(Objects::nonNull)
-                .filter(url -> !url.isEmpty())
-                .toList();
 
         // 1. check duplicate name
         if (!room.getName().equals(request.getName()) && roomRepository.existsByName(request.getName()) && !request.getName().equals(room.getName())) {
@@ -133,7 +125,7 @@ public class RoomServiceImpl implements RoomService {
         }
 
         // 4. If status changes -> save history
-        if (!room.getStatus().equals(request.getStatus())) {
+        if (room.getStatus() != null && !room.getStatus().equals(request.getStatus())) {
 
             RoomStatusHistory history = new RoomStatusHistory();
             history.setRoom(room);
@@ -142,7 +134,7 @@ public class RoomServiceImpl implements RoomService {
 
             roomStatusHistoryRepository.save(history);
         }
-        return mapToRoomResponse(oldImages, room);
+        return mapToResponse(room);
     }
 
     @Override
@@ -197,18 +189,18 @@ public class RoomServiceImpl implements RoomService {
         return roomRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Room not found"));
     }
 
-    private RoomResponse mapToRoomResponse(List<String> images, Room room) {
+    private RoomResponse mapToResponse(Room room) {
         return RoomResponse.builder()
                 .id(room.getId())
-                .type(room.getType().toString())
                 .name(room.getName())
-                .status(room.getStatus().toString())
                 .price(room.getPrice())
+                .status(room.getStatus().toString())
+                .type(room.getType().toString())
                 .capacity(room.getCapacity())
-                .description(room.getDescription())
-                .area(room.getArea())
-                .createdAt(room.getCreatedAt())
-                .images(images)
+                .images(room.getImages().stream()
+                        .map(RoomImage::getImageUrl)
+                        .toList())
                 .build();
     }
+
 }

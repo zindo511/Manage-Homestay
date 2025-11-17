@@ -1,8 +1,11 @@
 package vn.huy.service.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.huy.controller.request.ServiceCreationRequest;
 import vn.huy.controller.request.ServiceGroupCreationRequest;
@@ -14,7 +17,7 @@ import vn.huy.model.ServiceEntity;
 import vn.huy.model.ServiceGroup;
 import vn.huy.repository.ServiceGroupRepository;
 import vn.huy.repository.ServiceRepository;
-import vn.huy.service.ServiceInterface;
+import vn.huy.service.ServiceService;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -22,22 +25,22 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ServiceImpl implements ServiceInterface {
+public class ServiceImpl implements ServiceService {
 
     private final ServiceRepository serviceRepository;
     private final ServiceGroupRepository serviceGroupRepository;
 
     @Override
-    public List<ServiceResponse> getAll(Integer groupId, Boolean isActive, BigDecimal minPrice, BigDecimal maxPrice) {
-        log.info("serviceInterface.getAll()");
-        List<ServiceEntity> serviceEntities = serviceRepository.findByFilter(groupId, isActive, minPrice, maxPrice);
-        return serviceEntities.stream()
-                .map(entity ->
-                        new ServiceResponse(entity.getId(), entity.getName(), entity.getGroup().getId(), entity.getUnitPrice(), entity.isActive(), entity.getDescription()))
-                .toList();
+    public Page<ServiceResponse> getAllPaginated(Integer groupId, Boolean isActive,
+                                                 BigDecimal minPrice, BigDecimal maxPrice,
+                                                 Pageable pageable) {
+        log.info("Getting services with pagination - page: {}", pageable.getPageNumber());
+        Page<ServiceEntity> page = serviceRepository.findByFilter(groupId, isActive, minPrice, maxPrice, pageable);
+        return page.map(this::mapToResponse);
     }
 
     @Override
+    @Transactional
     public void createService(ServiceCreationRequest request) {
 
         // check duplicate name in group
@@ -59,6 +62,7 @@ public class ServiceImpl implements ServiceInterface {
     }
 
     @Override
+    @Transactional
     public void updateService(Long id, ServiceUpdateRequest request) {
         log.info("serviceInterface.update()");
         ServiceEntity entity = getService(id);
@@ -82,14 +86,19 @@ public class ServiceImpl implements ServiceInterface {
     }
 
     @Override
+    @Transactional
     public ServiceResponse deleteService(Long id) {
         ServiceEntity serviceEntity = getService(id);
+        if (!serviceEntity.isActive()) {
+            throw new InvalidDataException("Service is already inactive");
+        }
         serviceEntity.setActive(false);
         serviceRepository.save(serviceEntity);
         return mapToResponse(serviceEntity);
     }
 
     @Override
+    @Transactional
     public ServiceGroup createServiceGroup(ServiceGroupCreationRequest request) {
 
         if (serviceGroupRepository.existsByNameContainingIgnoreCase(request.getName())) {
@@ -103,11 +112,13 @@ public class ServiceImpl implements ServiceInterface {
     }
 
     @Override
+    @Transactional
     public void deleteServiceGroup(Long id) {
         serviceGroupRepository.deleteById(id);
     }
 
     @Override
+    @Transactional
     public ServiceGroup updateServiceGroup(Long id, ServiceGroupCreationRequest request) {
         ServiceGroup serviceGroup = getServiceGroup(id);
         if (serviceGroupRepository.existsByNameContainingIgnoreCase(request.getName())) {

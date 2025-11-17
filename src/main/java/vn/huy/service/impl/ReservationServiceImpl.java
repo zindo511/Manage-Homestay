@@ -2,6 +2,8 @@ package vn.huy.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import vn.huy.common.PaymentStatus;
 import vn.huy.common.ReservationStatus;
@@ -118,9 +120,15 @@ public class ReservationServiceImpl implements ReservationService {
     }
 
     @Override
-    public List<ReservationResponse> getReservations() {
-        List<Reservation> reservations = reservationRepository.findAll();
-        return reservations.stream().map(this::toResponse).toList();
+    public Page<ReservationResponse> getReservationsPaginated(Pageable pageable) {
+        Page<Reservation> reservations = reservationRepository.findAll(pageable);
+        return reservations.map(this::toResponse);
+    }
+
+    @Override
+    public ReservationResponse getReservationById(Long id) {
+        Reservation reservation = getReservation(id);
+        return toResponse(reservation);
     }
 
     /* ==========

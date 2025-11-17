@@ -1,5 +1,7 @@
 package vn.huy.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import vn.huy.common.RoomStatus;
 import vn.huy.common.RoomType;
 import vn.huy.controller.request.RoomCreationRequest;
@@ -13,7 +15,12 @@ import java.util.List;
 
 public interface RoomService {
 
-    List<Room> filterRooms(RoomType type, RoomStatus status, Integer capacity, BigDecimal minPrice, BigDecimal maxPrice);
+    Page<RoomResponse> filterRooms(RoomType type,
+                                   RoomStatus status,
+                                   Integer capacity,
+                                   BigDecimal minPrice,
+                                   BigDecimal maxPrice,
+                                   Pageable pageable);
 
     RoomResponse createRoom(RoomCreationRequest room);
 
