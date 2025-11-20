@@ -10,9 +10,6 @@ import java.time.LocalDateTime;
 
 @Data
 public class ReservationCreationRequest {
-    @NotNull(message = "User ID is required")
-    private Long userId;
-
     @NotNull(message = "Room ID is required")
     private Long roomId;
 

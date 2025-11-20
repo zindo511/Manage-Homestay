@@ -9,6 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class RoomImageResponse {
     private Long id;
-    private Long roomId;
     private String imageUrl;
 }

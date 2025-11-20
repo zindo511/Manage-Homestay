@@ -11,7 +11,6 @@ import vn.huy.common.RoomType;
 import vn.huy.model.Room;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Repository
 public interface RoomRepository extends JpaRepository<Room, Long> {
@@ -34,5 +33,8 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
 
     boolean existsByName(String name);
 
+
+    @Query(value = "select r.name from Room r where r.id =:id")
+    String findByNameById(@Param("id") Long id);
 }
 

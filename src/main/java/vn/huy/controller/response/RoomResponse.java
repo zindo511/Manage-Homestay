@@ -18,6 +18,6 @@ public class RoomResponse {
     private Integer capacity;
     private String description;
     private Integer area;
-    private LocalDateTime createdAt;
     private List<String> images;
+    private LocalDateTime createdAt;
 }

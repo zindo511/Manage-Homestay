@@ -17,15 +17,16 @@ public interface ServiceService {
     Page<ServiceResponse> getAllPaginated(Integer groupId, Boolean isActive,
                                           BigDecimal minPrice, BigDecimal maxPrice,
                                           Pageable pageable);
-    void createService(ServiceCreationRequest request);
+    ServiceResponse createService(ServiceCreationRequest request);
 
-    void updateService(Long id, ServiceUpdateRequest request);
+    List<ServiceGroup> getAllServiceGroups();
+
+    ServiceGroup addServiceGroup(ServiceGroupCreationRequest request);
+
+    ServiceResponse updateService(Long id, ServiceUpdateRequest request);
 
     ServiceResponse deleteService(Long id);
 
-    ServiceGroup createServiceGroup(ServiceGroupCreationRequest request);
-
     void deleteServiceGroup(Long id);
 
-    ServiceGroup updateServiceGroup(Long id, ServiceGroupCreationRequest request);
 }

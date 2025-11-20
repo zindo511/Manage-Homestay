@@ -10,14 +10,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vn.huy.common.RoomStatus;
 import vn.huy.common.RoomType;
 import vn.huy.controller.request.RoomCreationRequest;
+import vn.huy.controller.request.RoomImageRequest;
 import vn.huy.controller.request.RoomUpdateRequest;
+import vn.huy.controller.response.ApiResponse;
 import vn.huy.controller.response.RoomImageResponse;
 import vn.huy.controller.response.RoomResponse;
-import vn.huy.model.Room;
+import vn.huy.controller.response.RoomStatusHistoryResponse;
 import vn.huy.service.RoomService;
 
 import java.math.BigDecimal;
@@ -34,6 +39,7 @@ public class RoomController {
 
     @Operation(summary = "Get list of rooms with pagination and filters")
     @GetMapping
+    @PreAuthorize("hasAnyAuthority('Admin', 'Staff', 'Customer')")
     public Page<RoomResponse> getRooms(
             @RequestParam(required = false) RoomType type,
             @RequestParam(required = false) RoomStatus status,
@@ -54,42 +60,81 @@ public class RoomController {
         return roomService.filterRooms(type, status, capacity, minPrice, maxPrice, pageable);
     }
 
-    @Operation(summary = "Create room (admin)")
+    @Operation(summary = "Add room (admin)")
     @PostMapping
-    public RoomResponse createRoom(@Valid @RequestBody RoomCreationRequest request){
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    public ResponseEntity<ApiResponse<RoomResponse>> createRoom(@Valid @RequestBody RoomCreationRequest request){
         log.info("createRoom");
-        return roomService.createRoom(request);
+        RoomResponse response = roomService.createRoom(request);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Room created successfully", response));
     }
 
     @Operation(summary = "Get room by id")
     @GetMapping("/{id}")
-    public RoomResponse getRoomById(@PathVariable Long id){
-        return roomService.findRoomById(id);
+    @PreAuthorize("hasAnyAuthority('Adnin', 'Staff', 'Customer')")
+    public ResponseEntity<ApiResponse<RoomResponse>> getRoomById(@PathVariable Long id){
+        RoomResponse response = roomService.findRoomById(id);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("Room found successfully", response));
     }
 
-    @Operation(summary = "Update room (admin)")
+    @Operation(summary = "Update room (admin, staff)")
     @PutMapping("/{id}")
-    public RoomResponse updateRoom(@PathVariable @Valid @Min(value = 1, message = "id must be equals or greater than 1") Long id ,
+    @PreAuthorize("hasAnyAuthority('Admin', 'Staff')")
+    public ResponseEntity<ApiResponse<RoomResponse>> updateRoom(@PathVariable @Valid @Min(value = 1, message = "id must be equals or greater than 1") Long id ,
                                    @Valid @RequestBody RoomUpdateRequest request) {
         log.info("updateRoom");
-        return roomService.update(id, request);
+        RoomResponse response = roomService.update(id, request);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("Room updated successfully", response));
     }
 
     @Operation(summary = "Delete room (admin)")
     @DeleteMapping("/{id}")
-    public void deleteRoomById(@PathVariable  Long id){
+    @PreAuthorize("hasAnyAuthority('Admin')")
+    public ResponseEntity<ApiResponse<Void>> deleteRoomById(@PathVariable @Valid @Min(value = 1, message = "id must be equals or greater than 1") Long id){
         roomService.deleteRoomById(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("Room deleted successfully", null));
     }
 
     @Operation(summary = "Get images for a room")
     @GetMapping("/{id}/images")
-    public List<RoomImageResponse> roomImages(@PathVariable @Valid @Min(value = 1, message = "id must be equals or greater than 1") Long id){
-        return roomService.roomImageList(id);
+    @PreAuthorize("hasAnyAuthority('Admin', 'Staff', 'Customer')")
+    public ResponseEntity<ApiResponse<List<RoomImageResponse>>> roomImages(@PathVariable @Valid @Min(value = 1, message = "id must be equals or greater than 1") Long id){
+        List<RoomImageResponse> responses = roomService.roomImageList(id);
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success(" Get room images successfully", responses));
     }
 
-    @Operation(summary = "Add images to room (admin)")
+    @Operation(summary = "Add images to room (admin, staff)")
     @PostMapping("/{id}/images")
-    public String uploadImage(@PathVariable Long id, @RequestBody String imageUrl){
-        return roomService.uploadImage(id, imageUrl);
+    @PreAuthorize("hasAnyAuthority('Admin', 'Staff')")
+    public ResponseEntity<ApiResponse<List<RoomImageResponse>>> uploadImage(@PathVariable @Valid @Min(value = 1, message = "id must be equals or greater than 1") Long id, @Valid @RequestBody RoomImageRequest imageUrl){
+        List<RoomImageResponse> images = roomService.uploadImage(id, imageUrl);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Room image upload successfully", images));
+    }
+
+    @Operation(summary = "Get room status history")
+    @GetMapping("{id}/status-history")
+    @PreAuthorize("hasAnyAuthority('Admin', 'Staff')")
+    public ResponseEntity<ApiResponse<List<RoomStatusHistoryResponse>>> getRoomStatusHistory(@PathVariable Long id){
+        log.info("getRoomStatusHistory");
+        List<RoomStatusHistoryResponse> responses = roomService.getRoomStatusHistory(id);
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(ApiResponse.success("Room status history successfully", responses));
     }
 }

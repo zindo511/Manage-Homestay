@@ -5,10 +5,13 @@ import org.springframework.data.domain.Pageable;
 import vn.huy.common.RoomStatus;
 import vn.huy.common.RoomType;
 import vn.huy.controller.request.RoomCreationRequest;
+import vn.huy.controller.request.RoomImageRequest;
 import vn.huy.controller.request.RoomUpdateRequest;
 import vn.huy.controller.response.RoomImageResponse;
 import vn.huy.controller.response.RoomResponse;
+import vn.huy.controller.response.RoomStatusHistoryResponse;
 import vn.huy.model.Room;
+import vn.huy.model.RoomStatusHistory;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,5 +35,7 @@ public interface RoomService {
 
     List<RoomImageResponse> roomImageList(Long roomId);
 
-    String uploadImage(Long roomId, String imageUrl);
+    List<RoomImageResponse> uploadImage(Long roomId, RoomImageRequest imageUrl);
+
+    List<RoomStatusHistoryResponse> getRoomStatusHistory(Long roomId);
 }

@@ -3,16 +3,25 @@ package vn.huy.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.CreationTimestamp;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import vn.huy.common.Gender;
+import vn.huy.common.UserStatus;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "user")
-public class User {
+@Slf4j(topic = "USER")
+public class User implements UserDetails, Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +34,7 @@ public class User {
     private String username;
 
     @Column(name = "password_hash")
-    private String passwordHash;
+    private String password;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -50,11 +59,44 @@ public class User {
 
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id")
     private Role role;
 
     @Column(name = "created_at", length = 255)
     @CreationTimestamp
     private LocalDateTime createdAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private UserStatus status = UserStatus.Active; // default Active
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+
+        // Vì user chỉ có 1 role_id
+        String roleName = role.getName();
+        log.info("User role: {}", roleName);
+        return List.of(new SimpleGrantedAuthority(roleName));
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return UserDetails.super.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return UserDetails.super.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return UserDetails.super.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return UserStatus.Active.equals(status);
+    }
 }

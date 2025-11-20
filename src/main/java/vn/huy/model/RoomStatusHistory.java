@@ -29,4 +29,7 @@ public class RoomStatusHistory {
     @Column(name = "changed_at")
     @CreationTimestamp
     private LocalDateTime changedAt;
+
+    @Column(name = "changed_by")
+    private Long changedBy;
 }

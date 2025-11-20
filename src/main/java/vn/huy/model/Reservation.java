@@ -1,8 +1,7 @@
 package vn.huy.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import vn.huy.common.PaymentMethod;
@@ -43,9 +42,6 @@ public class Reservation {
     @Column(name = "check_out_date", nullable = false)
     private LocalDateTime checkOutDate;
 
-    @Column(nullable = false)
-    private Integer nights;
-
     @Column(name = "num_guests", nullable = false)
     private Integer numGuests;
 
@@ -64,7 +60,6 @@ public class Reservation {
     @Column(name = "payment_method")
     private PaymentMethod paymentMethod;
 
-    @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal total;
 
     @CreationTimestamp

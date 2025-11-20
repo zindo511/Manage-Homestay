@@ -18,18 +18,17 @@ import java.time.LocalDateTime;
 public class ReservationResponse {
     private Long id;
     private Long userId;
+    private String userName;
     private Long roomId;
+    private String roomName;
     private Long employeeId;
     private LocalDateTime bookingDate;
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;
-    private Integer nights;
     private Integer numGuests;
     private BigDecimal roomPrice;
     private ReservationStatus status;
     private PaymentStatus paymentStatus;
     private PaymentMethod paymentMethod;
     private BigDecimal total;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

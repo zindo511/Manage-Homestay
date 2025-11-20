@@ -9,9 +9,11 @@ import org.springframework.stereotype.Service;
 import vn.huy.common.RoomStatus;
 import vn.huy.common.RoomType;
 import vn.huy.controller.request.RoomCreationRequest;
+import vn.huy.controller.request.RoomImageRequest;
 import vn.huy.controller.request.RoomUpdateRequest;
 import vn.huy.controller.response.RoomImageResponse;
 import vn.huy.controller.response.RoomResponse;
+import vn.huy.controller.response.RoomStatusHistoryResponse;
 import vn.huy.exception.InvalidDataException;
 import vn.huy.exception.ResourceNotFoundException;
 import vn.huy.model.Room;
@@ -20,6 +22,7 @@ import vn.huy.model.RoomStatusHistory;
 import vn.huy.repository.RoomImageRepository;
 import vn.huy.repository.RoomRepository;
 import vn.huy.repository.RoomStatusHistoryRepository;
+import vn.huy.repository.UserRepository;
 import vn.huy.service.RoomService;
 
 import java.math.BigDecimal;
@@ -34,6 +37,7 @@ public class RoomServiceImpl implements RoomService {
     private final RoomRepository roomRepository;
     private final RoomImageRepository roomImageRepository;
     private final RoomStatusHistoryRepository roomStatusHistoryRepository;
+    private final UserRepository userRepository;
 
     @Override
     public Page<RoomResponse> filterRooms(RoomType type,
@@ -161,25 +165,45 @@ public class RoomServiceImpl implements RoomService {
         Room room = getRoom(roomId);
         return room.getImages().stream()
                 .map(roomImage -> new RoomImageResponse(
-                        roomImage.getId(), roomId, roomImage.getImageUrl()
+                        roomImage.getId(), roomImage.getImageUrl()
                 )).toList();
     }
 
     @Override
-    public String uploadImage(Long roomId, String imageUrl) {
+    public List<RoomImageResponse> uploadImage(Long roomId, RoomImageRequest request) {
         Room room = getRoom(roomId);
 
         // thêm ảnh vào database room_image
-        RoomImage roomImage = new RoomImage();
-        roomImage.setRoom(room);
-        roomImage.setImageUrl(imageUrl);
+        List<RoomImage> newImages = request.getImageUrl().stream()
+                        .map(url -> {
+                            RoomImage roomImage = new RoomImage();
+                            roomImage.setRoom(room);
+                            roomImage.setImageUrl(url);
+                            return roomImage;
+                        })
+                .toList();
 
-        roomImageRepository.save(roomImage);
+        roomImageRepository.saveAll(newImages);
 
-        // thêm ảnh vào phòng
-        room.addImage(roomImage);
+        return newImages.stream()
+                .map(img -> new RoomImageResponse(img.getId(), img.getImageUrl()))
+                .toList();
+    }
 
-        return "Image uploaded successfully";
+    @Override
+    public List<RoomStatusHistoryResponse> getRoomStatusHistory(Long roomId) {
+        Room room = getRoom(roomId);
+
+        List<RoomStatusHistory> list = roomStatusHistoryRepository.findByRoomIdOrderByChangedAtDesc(roomId);
+
+        return list.stream()
+                .map(item -> new RoomStatusHistoryResponse(
+                        item.getId(),
+                        item.getStatus(),
+                        item.getChangedBy(),
+                        userRepository.findByNameById(item.getChangedBy()),
+                        item.getChangedAt()
+                )).toList();
     }
 
     /* ======================
@@ -192,14 +216,17 @@ public class RoomServiceImpl implements RoomService {
     private RoomResponse mapToResponse(Room room) {
         return RoomResponse.builder()
                 .id(room.getId())
-                .name(room.getName())
-                .price(room.getPrice())
-                .status(room.getStatus().toString())
                 .type(room.getType().toString())
+                .name(room.getName())
+                .status(room.getStatus().toString())
+                .price(room.getPrice())
                 .capacity(room.getCapacity())
+                .description(room.getDescription())
+                .area(room.getArea())
                 .images(room.getImages().stream()
                         .map(RoomImage::getImageUrl)
                         .toList())
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 

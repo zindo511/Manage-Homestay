@@ -30,6 +30,7 @@ public interface ServiceRepository extends JpaRepository<ServiceEntity, Long> {
     );
 
     boolean existsByNameAndGroup_Id(String name, Long groupId);
-    
 
+
+    boolean existsByGroup_Id(Long id);
 }

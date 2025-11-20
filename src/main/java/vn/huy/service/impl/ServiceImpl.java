@@ -41,7 +41,7 @@ public class ServiceImpl implements ServiceService {
 
     @Override
     @Transactional
-    public void createService(ServiceCreationRequest request) {
+    public ServiceResponse createService(ServiceCreationRequest request) {
 
         // check duplicate name in group
         if (serviceRepository.existsByNameAndGroup_Id(request.getName(), request.getGroupId())) {
@@ -59,11 +59,26 @@ public class ServiceImpl implements ServiceService {
         serviceEntity.setDescription(request.getDescription());
 
         serviceRepository.save(serviceEntity);
+
+        return mapToResponse(serviceEntity);
+    }
+
+    @Override
+    public List<ServiceGroup> getAllServiceGroups() {
+        return serviceGroupRepository.findAll();
+    }
+
+    @Override
+    public ServiceGroup addServiceGroup(ServiceGroupCreationRequest request) {
+        ServiceGroup serviceGroup = new ServiceGroup();
+        serviceGroup.setName(request.getName());
+        serviceGroupRepository.save(serviceGroup);
+        return serviceGroup;
     }
 
     @Override
     @Transactional
-    public void updateService(Long id, ServiceUpdateRequest request) {
+    public ServiceResponse updateService(Long id, ServiceUpdateRequest request) {
         log.info("serviceInterface.update()");
         ServiceEntity entity = getService(id);
 
@@ -83,6 +98,8 @@ public class ServiceImpl implements ServiceService {
         if (request.getDescription() != null) entity.setDescription(request.getDescription());
 
         serviceRepository.save(entity);
+
+        return mapToResponse(entity);
     }
 
     @Override
@@ -99,35 +116,16 @@ public class ServiceImpl implements ServiceService {
 
     @Override
     @Transactional
-    public ServiceGroup createServiceGroup(ServiceGroupCreationRequest request) {
-
-        if (serviceGroupRepository.existsByNameContainingIgnoreCase(request.getName())) {
-            throw new InvalidDataException("Service name already exists");
-        }
-
-        ServiceGroup serviceGroup = new ServiceGroup();
-        serviceGroup.setName(request.getName());
-
-        return serviceGroupRepository.save(serviceGroup);
-    }
-
-    @Override
-    @Transactional
     public void deleteServiceGroup(Long id) {
-        serviceGroupRepository.deleteById(id);
-    }
+        ServiceGroup group = getServiceGroup(id);
 
-    @Override
-    @Transactional
-    public ServiceGroup updateServiceGroup(Long id, ServiceGroupCreationRequest request) {
-        ServiceGroup serviceGroup = getServiceGroup(id);
-        if (serviceGroupRepository.existsByNameContainingIgnoreCase(request.getName())) {
-            throw new InvalidDataException("ServiceGroup name already exists");
+        boolean hasServices = serviceRepository.existsByGroup_Id(id);
+        if (hasServices) {
+            throw new InvalidDataException("Cannot delete group because there is still a linked service");
         }
-        serviceGroup.setName(request.getName());
-        return serviceGroupRepository.save(serviceGroup);
-    }
 
+        serviceGroupRepository.delete(group);
+    }
 
     /* ==========
         HELPER
@@ -140,6 +138,7 @@ public class ServiceImpl implements ServiceService {
     private ServiceGroup getServiceGroup(Long id) {
         return serviceGroupRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Service group not found"));
+
     }
 
     private ServiceResponse mapToResponse(ServiceEntity entity) {
